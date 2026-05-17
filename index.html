@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정보처리산업기사 CBT</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6fb;--surface:#fff;--surface2:#f0f3fa;--border:#dde3f0;
+  --text:#1a1d2e;--muted:#6b7280;
+  --blue:#3b7afe;--blue-lt:#e8f0ff;
+  --green:#16a34a;--green-lt:#dcfce7;
+  --red:#dc2626;--red-lt:#fee2e2;
+  --amber:#d97706;--amber-lt:#fef3c7;
+  --shadow:0 2px 16px rgba(59,122,254,.08);--r:14px;--tr:.16s ease;
+}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── screens ── */
+.screen{display:none}
+#setupScreen.active{display:flex;flex-direction:column;align-items:center;padding:32px 16px 56px;min-height:100vh}
+#quizScreen.active{display:block}
+#resultScreen.active{display:flex;flex-direction:column;align-items:center;padding:40px 16px 64px;gap:20px;min-height:100vh}
+
+/* ── setup ── */
+.setup-wrap{width:100%;max-width:660px;display:flex;flex-direction:column;gap:18px}
+.app-badge{display:inline-block;background:var(--blue-lt);color:var(--blue);font-size:12px;font-weight:700;padding:4px 14px;border-radius:999px;letter-spacing:.04em;margin-bottom:10px}
+.app-title{font-size:clamp(22px,4vw,32px);font-weight:700}
+.app-title span{color:var(--blue)}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px}
+.card-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 15px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;border:2px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all var(--tr)}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.on{border-color:var(--blue);background:var(--blue-lt);color:var(--blue)}
+.chip.wrong-chip.on{border-color:var(--red);background:var(--red-lt);color:var(--red)}
+#subjectRow{display:none;flex-wrap:wrap;gap:8px;margin-top:12px}
+#subjectRow.show{display:flex}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-box{background:var(--surface2);border-radius:10px;padding:12px 8px;text-align:center}
+.stat-val{font-size:24px;font-weight:700}
+.stat-val.blue{color:var(--blue)}.stat-val.green{color:var(--green)}.stat-val.red{color:var(--red)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600}
+.stats-footer{display:flex;justify-content:flex-end;margin-top:10px}
+kbd{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-family:inherit;font-size:12px;font-weight:700;color:var(--text)}
+.sc-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.sc-row:last-child{border-bottom:none}
+.btn{border:none;border-radius:var(--r);font-family:inherit;font-weight:700;cursor:pointer;transition:all var(--tr)}
+.btn-primary{background:var(--blue);color:#fff;padding:15px;font-size:16px;box-shadow:0 4px 20px rgba(59,122,254,.3);width:100%}
+.btn-primary:hover{background:#2563eb;transform:translateY(-2px);box-shadow:0 6px 24px rgba(59,122,254,.4)}
+.btn-primary:disabled{background:var(--border);color:var(--muted);transform:none;box-shadow:none;cursor:not-allowed}
+.btn-sm{padding:8px 16px;font-size:13px;border-radius:8px}
+.btn-secondary{background:var(--surface2);color:var(--muted);border:2px solid var(--border)!important;border-style:solid}
+.btn-secondary:hover{border-color:var(--blue)!important;color:var(--blue);background:var(--blue-lt)}
+.btn-danger{background:var(--red-lt);color:var(--red);border:2px solid transparent}
+.btn-danger:hover{border-color:var(--red)!important}
+
+/* ── quiz layout ── */
+.quiz-layout{display:flex;min-height:100vh;max-width:1120px;margin:0 auto}
+.quiz-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.quiz-header{background:var(--surface);padding:14px 24px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.subj-badge{font-weight:700;font-size:13px;color:var(--blue);background:var(--blue-lt);padding:4px 14px;border-radius:999px}
+.prog-text{font-size:13px;font-weight:700;color:var(--muted)}
+.pbar-wrap{background:var(--surface2);border-radius:999px;height:6px;overflow:hidden}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--blue),#60a5fa);border-radius:999px;transition:width .35s ease}
+.quiz-body{flex:1;padding:26px 28px 20px;max-width:800px}
+.q-label{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:9px}
+.q-text{font-size:clamp(15px,2.2vw,18px);font-weight:500;line-height:1.85;margin-bottom:22px;word-break:keep-all}
+.opts{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:22px}
+.opt{display:flex;align-items:flex-start;gap:12px;background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;transition:border-color var(--tr),background var(--tr),transform var(--tr);user-select:none}
+.opt:hover:not(.disabled){border-color:var(--blue);background:var(--blue-lt);transform:translateX(2px)}
+.opt.sel{border-color:var(--blue);background:var(--blue-lt)}
+.opt.ok{border-color:var(--green);background:var(--green-lt)}
+.opt.bad{border-color:var(--red);background:var(--red-lt)}
+.opt.disabled{cursor:default}
+.onum{flex-shrink:0;width:27px;height:27px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--muted);transition:background var(--tr),color var(--tr)}
+.opt.sel .onum{background:var(--blue);color:#fff}
+.opt.ok .onum{background:var(--green);color:#fff}
+.opt.bad .onum{background:var(--red);color:#fff}
+.otxt{font-size:14px;line-height:1.6;word-break:keep-all;padding-top:4px}
+.fb-area{min-height:50px;display:flex;align-items:center;gap:12px}
+.fb{display:none;align-items:center;gap:7px;padding:9px 20px;border-radius:999px;font-size:15px;font-weight:700;animation:pop .22s cubic-bezier(.34,1.56,.64,1)}
+.fb.show{display:flex}
+.fb.ok-fb{background:var(--green-lt);color:var(--green)}
+.fb.bad-fb{background:var(--red-lt);color:var(--red)}
+.fb-hint{font-size:12px;color:var(--muted)}
+@keyframes pop{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}
+.quiz-footer{background:var(--surface);padding:11px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+.ft-hints{display:flex;gap:14px}
+
+/* ── OMR panel ── */
+.omr-panel{width:186px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);padding:14px 10px;position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-width:thin}
+.omr-heading{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:8px}
+.omr-legend{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:12px}
+.legend-item{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--muted);font-weight:600}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+.omr-group{margin-bottom:10px}
+.omr-subj-lbl{display:block;font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:2px 6px;border-radius:4px;margin-bottom:5px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.omr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
+.bubble{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;background:var(--surface2);color:var(--muted);border:1.5px solid var(--border);transition:all .18s ease}
+.bubble.cur{background:var(--blue);color:#fff;border-color:var(--blue);transform:scale(1.18);box-shadow:0 0 0 2px var(--blue-lt)}
+.bubble.ok{background:var(--green);color:#fff;border-color:var(--green)}
+.bubble.bad{background:var(--red);color:#fff;border-color:var(--red)}
+.bubble.amber{background:var(--amber);color:#fff;border-color:var(--amber)}
+
+/* ── result ── */
+.result-wrap{width:100%;max-width:680px;display:flex;flex-direction:column;gap:18px}
+.score-card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:32px 28px;text-align:center}
+.score-big{font-size:clamp(52px,10vw,76px);font-weight:700;color:var(--blue);line-height:1}
+.score-denom{font-size:20px;color:var(--muted);font-weight:500}
+.score-lbl{font-size:13px;color:var(--muted);margin:8px 0 16px}
+.score-bar-wrap{background:var(--surface2);border-radius:999px;height:10px;overflow:hidden;max-width:280px;margin:0 auto 20px}
+.score-bar{height:100%;background:linear-gradient(90deg,var(--blue),#60a5fa);border-radius:999px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+.rs-grid{display:flex;justify-content:center;gap:32px}
+.rs-item{text-align:center}
+.rs-val{font-size:22px;font-weight:700}
+.rs-val.green{color:var(--green)}.rs-val.red{color:var(--red)}
+.rs-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.subj-card,.wrong-card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px}
+.sec-title{font-size:14px;font-weight:700;margin-bottom:14px}
+.srow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.srow:last-child{border-bottom:none}
+.srow-name{flex:1;font-weight:600}
+.srow-bar-wrap{flex:2;background:var(--surface2);border-radius:999px;height:6px;overflow:hidden}
+.srow-bar{height:100%;background:var(--blue);border-radius:999px;transition:width .6s ease}
+.srow-score{font-weight:700;font-size:14px;min-width:36px;text-align:right}
+.wrong-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.wrong-badge{background:var(--red-lt);color:var(--red);font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px}
+.wi{padding:12px 0;border-bottom:1px solid var(--border)}
+.wi:last-child{border-bottom:none}
+.wi-meta{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.wi-q{font-size:13px;font-weight:500;line-height:1.5;margin-bottom:5px;word-break:keep-all}
+.wi-a{font-size:12px;color:var(--green);font-weight:700}
+.result-btns{display:flex;gap:10px;width:100%;max-width:680px}
+.result-btns .btn-primary{flex:1;border-radius:var(--r)!important}
+
+/* ── mobile OMR strip ── */
+.omr-mobile{
+  display:none;background:var(--surface);border-top:1px solid var(--border);
+  padding:8px 12px 10px;overflow-x:auto;white-space:nowrap;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.omr-mobile::-webkit-scrollbar{display:none}
+.omr-mob-group{display:inline-flex;align-items:center;gap:3px;margin-right:12px;vertical-align:middle}
+.omr-mob-lbl{display:inline-block;font-size:9px;font-weight:700;color:var(--blue);margin-right:4px}
+.bsm{width:18px;height:18px;border-radius:50%;font-size:7px;font-weight:700;
+  background:var(--surface2);color:var(--muted);border:1.5px solid var(--border);
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s ease}
+.bsm.cur{background:var(--blue);color:#fff;border-color:var(--blue);transform:scale(1.2);box-shadow:0 0 0 2px var(--blue-lt)}
+.bsm.ok{background:var(--green);color:#fff;border-color:var(--green)}
+.bsm.bad{background:var(--red);color:#fff;border-color:var(--red)}
+.bsm.amber{background:var(--amber);color:#fff;border-color:var(--amber)}
+
+/* ── responsive ── */
+@media(max-width:768px){
+  .omr-panel{display:none}
+  .omr-mobile{display:block}
+  .quiz-body{padding:18px 16px 14px}
+  .quiz-header{padding:12px 16px 10px}
+  .quiz-footer{padding:10px 16px}
+  .quiz-layout{flex-direction:column}
+  .quiz-main{min-height:0}
+}
+@media(max-width:480px){
+  #setupScreen.active{padding:20px 12px 48px}
+  .score-card{padding:24px 18px}
+  .chip{padding:6px 12px;font-size:12px}
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+  .result-btns{flex-direction:column}
+  .result-btns .btn-primary,.result-btns button{width:100%;border-radius:var(--r)!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SETUP ═══════════ -->
+<div id="setupScreen" class="screen active">
+<div class="setup-wrap">
+
+  <div style="text-align:center;padding:8px 0 4px">
+    <div class="app-badge">정보처리산업기사 CBT</div>
+    <h1 class="app-title">기출문제 <span>실전 연습</span></h1>
+  </div>
+
+  <div class="card">
+    <div class="card-label">풀이 모드</div>
+    <div class="chip-row">
+      <button class="chip on" data-mode="all">전체 5과목</button>
+      <button class="chip" data-mode="subject">과목 선택</button>
+      <button class="chip wrong-chip" data-mode="wrong">오답 모아풀기</button>
+    </div>
+    <div id="subjectRow">
+      <button class="chip on" data-subj="데이터베이스">데이터베이스</button>
+      <button class="chip" data-subj="전자계산기구조">전자계산기구조</button>
+      <button class="chip" data-subj="운영체제">운영체제</button>
+      <button class="chip" data-subj="소프트웨어공학">소프트웨어공학</button>
+      <button class="chip" data-subj="데이터통신">데이터통신</button>
+    </div>
+  </div>
+
+  <div class="card" id="yearCard">
+    <div class="card-label">출제 연도</div>
+    <div class="chip-row" id="yearRow">
+      <button class="chip on" data-year="all">전체</button>
+      <button class="chip on" data-year="2020">2020</button>
+      <button class="chip on" data-year="2021">2021</button>
+      <button class="chip on" data-year="2022">2022</button>
+      <button class="chip on" data-year="2023">2023</button>
+      <button class="chip on" data-year="2024">2024</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">내 현황</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-val blue" id="stTotal">0</div><div class="stat-lbl">전체 문제</div></div>
+      <div class="stat-box"><div class="stat-val green" id="stMastered">0</div><div class="stat-lbl">마스터 완료</div></div>
+      <div class="stat-box"><div class="stat-val red" id="stWrong">0</div><div class="stat-lbl">오답 누적</div></div>
+    </div>
+    <div class="stats-footer">
+      <button class="btn btn-sm btn-danger" id="btnReset">진행 초기화</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">키보드 단축키</div>
+    <div class="sc-row"><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></span><span style="color:var(--muted);font-size:13px">보기 선택</span></div>
+    <div class="sc-row"><span><kbd>Space</kbd></span><span style="color:var(--muted);font-size:13px">정답 확인 / 다음 문제</span></div>
+    <div class="sc-row"><span style="font-size:13px;font-weight:600">오답 시</span><span style="color:var(--muted);font-size:13px">정답 표시 → Space로 재시도</span></div>
+  </div>
+
+  <button class="btn btn-primary" id="btnStart">시작하기</button>
+</div>
+</div>
+
+
+<!-- ═══════════ QUIZ ═══════════ -->
+<div id="quizScreen" class="screen">
+<div class="quiz-layout">
+
+  <div class="quiz-main">
+    <div class="quiz-header">
+      <div class="quiz-meta">
+        <span class="subj-badge" id="qSubject">과목명</span>
+        <span class="prog-text" id="qProg">1 / 100</span>
+      </div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="pbar" style="width:1%"></div></div>
+    </div>
+
+    <div class="quiz-body">
+      <div class="q-label" id="qLabel">문제 1</div>
+      <div class="q-text" id="qText">문제 로딩중...</div>
+      <ul class="opts" id="optsList">
+        <li class="opt" data-n="1"><span class="onum">①</span><span class="otxt"></span></li>
+        <li class="opt" data-n="2"><span class="onum">②</span><span class="otxt"></span></li>
+        <li class="opt" data-n="3"><span class="onum">③</span><span class="otxt"></span></li>
+        <li class="opt" data-n="4"><span class="onum">④</span><span class="otxt"></span></li>
+      </ul>
+      <div class="fb-area">
+        <div class="fb ok-fb" id="fbOk">✓ 정답!</div>
+        <div class="fb bad-fb" id="fbBad">✗ 오답! 정답을 확인하고 재시도</div>
+        <span class="fb-hint" id="fbHint"></span>
+      </div>
+    </div>
+
+    <div class="quiz-footer">
+      <div class="ft-hints">
+        <span><kbd>1</kbd>–<kbd>4</kbd> 선택</span>
+        <span><kbd>Space</kbd> 확인/다음</span>
+      </div>
+      <span id="ftStatus" style="font-size:11px"></span>
+    </div>
+    <div class="omr-mobile" id="omrMobile"></div>
+  </div>
+
+  <div class="omr-panel">
+    <div class="omr-heading">OMR 카드</div>
+    <div class="omr-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>현재</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>정답</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>오답후정답</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>오답</div>
+    </div>
+    <div id="omrContainer"></div>
+  </div>
+
+</div>
+</div>
+
+
+<!-- ═══════════ RESULT ═══════════ -->
+<div id="resultScreen" class="screen">
+<div class="result-wrap">
+
+  <div class="score-card">
+    <div><span class="score-big" id="rScoreBig">0</span><span class="score-denom" id="rScoreDenom"> / 100</span></div>
+    <div class="score-lbl">첫 시도 정답 수</div>
+    <div class="score-bar-wrap"><div class="score-bar" id="rScoreBar" style="width:0%"></div></div>
+    <div class="rs-grid">
+      <div class="rs-item"><div class="rs-val green" id="rOk">0</div><div class="rs-lbl">정답</div></div>
+      <div class="rs-item"><div class="rs-val red" id="rBad">0</div><div class="rs-lbl">오답(첫시도)</div></div>
+    </div>
+  </div>
+
+  <div class="subj-card"><div class="sec-title">과목별 성적</div><div id="rBySubj"></div></div>
+
+  <div class="wrong-card" id="wrongCard" style="display:none">
+    <div class="wrong-header">
+      <span class="sec-title" style="margin:0">오답 노트</span>
+      <span class="wrong-badge" id="wrongBadge">0개</span>
+    </div>
+    <div id="wrongList"></div>
+  </div>
+
+</div>
+
+<div class="result-btns">
+  <button class="btn btn-primary" id="btnRestart">다시 풀기</button>
+  <button class="btn btn-sm btn-secondary" style="border-radius:var(--r);padding:15px 24px;font-size:15px" id="btnHome">메인으로</button>
+</div>
+</div>
+
+
+<!-- sample fallback -->
+<script>
+const SAMPLE_DATA={
+  "데이터베이스":[
+    {id:"s_db1",question:"관계형 DB에서 기본키(PK)에 대한 설명으로 옳지 않은 것은?",options:["유일성을 가져야 한다","NULL 값을 가질 수 있다","최소성을 가져야 한다","한 테이블에 하나만 설정 가능"],answer:2},
+    {id:"s_db2",question:"SQL에서 데이터를 검색하는 명령어는?",options:["INSERT","UPDATE","SELECT","DELETE"],answer:3},
+    {id:"s_db3",question:"정규화의 주목적은?",options:["데이터 중복 최대화","무결성 유지 및 중복 최소화","검색 속도 최대화","테이블 수 최소화"],answer:2},
+    {id:"s_db4",question:"트랜잭션 ACID 중 원자성(Atomicity)이란?",options:["일관된 상태 유지","전부 실행 또는 전혀 미실행","간섭 없음","완료 후 영구 반영"],answer:2},
+    {id:"s_db5",question:"E-R 다이어그램에서 개체(Entity)를 표현하는 도형은?",options:["타원형","마름모","직사각형","삼각형"],answer:3},
+    {id:"s_db6",question:"릴레이션의 튜플이 가질 수 있는 값들의 집합은?",options:["튜플","릴레이션","도메인","엔티티"],answer:3},
+    {id:"s_db7",question:"1NF에서 2NF가 되기 위한 조건은?",options:["모든 도메인이 원자값","이행 함수 종속 제거","완전 함수 종속 만족","다치 종속 제거"],answer:3},
+  ],
+  "전자계산기구조":[
+    {id:"s_ca1",question:"다음 실행할 명령어 주소를 기억하는 레지스터는?",options:["누산기(AC)","프로그램 카운터(PC)","명령어 레지스터(IR)","MAR"],answer:2},
+    {id:"s_ca2",question:"2의 보수로 -5를 8비트 표현하면?",options:["10000101","11111010","11111011","10000100"],answer:3},
+    {id:"s_ca3",question:"캐시 메모리에 대한 설명 중 틀린 것은?",options:["CPU와 주기억장치 사이에 위치","주기억장치보다 속도 빠름","주기억장치보다 용량 큼","적중률 높을수록 성능 좋음"],answer:3},
+    {id:"s_ca4",question:"파이프라인 기법의 목적은?",options:["순차 처리","처리 속도 향상","메모리 절약","오류 감소"],answer:2},
+    {id:"s_ca5",question:"DMA에 대한 설명으로 옳은 것은?",options:["CPU를 통해 전송","CPU 없이 메모리↔I/O 직접 전송","캐시에만 접근","소프트웨어로만 구현"],answer:2},
+    {id:"s_ca6",question:"인터럽트 발생 시 현재 수행 중인 프로그램의 상태를 저장하는 곳은?",options:["캐시","스택","레지스터","ROM"],answer:2},
+    {id:"s_ca7",question:"RISC 구조의 특징이 아닌 것은?",options:["명령어 수가 적다","고정 길이 명령어","복잡한 주소 지정 방식","파이프라인 적용 용이"],answer:3},
+  ],
+  "운영체제":[
+    {id:"s_os1",question:"교착상태(Deadlock) 발생 조건이 아닌 것은?",options:["상호 배제","점유와 대기","선점(Preemption)","환형 대기"],answer:3},
+    {id:"s_os2",question:"라운드 로빈 스케줄링의 핵심 요소는?",options:["우선순위","시간 할당량(Time Quantum)","대기 시간","버스트 시간"],answer:2},
+    {id:"s_os3",question:"가장 오래 미사용 페이지를 교체하는 알고리즘은?",options:["FIFO","LRU","Optimal","LFU"],answer:2},
+    {id:"s_os4",question:"스레드에 대한 설명으로 옳은 것은?",options:["스레드가 자원 더 많이 사용","프로세스가 컨텍스트 스위칭 비용 작음","같은 프로세스 내 자원 공유","독립적 주소 공간 보유"],answer:3},
+    {id:"s_os5",question:"임계 구역 해결 조건이 아닌 것은?",options:["상호 배제","진행(Progress)","한정 대기","선점(Preemption)"],answer:4},
+    {id:"s_os6",question:"세마포어(Semaphore)에서 P연산의 의미는?",options:["자원 반납","자원 요청 및 대기","프로세스 생성","인터럽트 처리"],answer:2},
+    {id:"s_os7",question:"가상 메모리의 페이지 부재(Page Fault)란?",options:["페이지 테이블 오류","요청 페이지가 물리 메모리에 없는 상태","메모리 용량 초과","TLB 미스"],answer:2},
+  ],
+  "소프트웨어공학":[
+    {id:"s_se1",question:"점진적으로 개선하는 나선형 SDLC 모델은?",options:["폭포수","나선형","V 모델","빅뱅"],answer:2},
+    {id:"s_se2",question:"블랙박스 테스트 기법에 해당하는 것은?",options:["조건 커버리지","구문 커버리지","동등 분할","경로 테스트"],answer:3},
+    {id:"s_se3",question:"결합도가 가장 낮은(좋은) 형태는?",options:["내용 결합도","공통 결합도","자료 결합도","제어 결합도"],answer:3},
+    {id:"s_se4",question:"동적 행위를 표현하지 않는 UML 다이어그램은?",options:["시퀀스","상태","클래스","활동"],answer:3},
+    {id:"s_se5",question:"소프트웨어 형상 관리(SCM)의 목적은?",options:["비용 절감","변경 체계적 관리","생산성 측정","사용자 교육"],answer:2},
+    {id:"s_se6",question:"응집도가 가장 높은(좋은) 형태는?",options:["우연적 응집도","논리적 응집도","기능적 응집도","시간적 응집도"],answer:3},
+    {id:"s_se7",question:"소프트웨어 테스트에서 알파 테스트란?",options:["개발자가 수행하는 테스트","선택된 사용자가 개발 환경에서 수행","실제 사용자가 실제 환경에서 수행","자동화 도구로 수행"],answer:2},
+  ],
+  "데이터통신":[
+    {id:"s_dc1",question:"OSI 7계층에서 라우팅 담당 계층은?",options:["데이터링크","네트워크","전송","세션"],answer:2},
+    {id:"s_dc2",question:"TCP와 UDP 차이점으로 옳은 것은?",options:["TCP는 비연결형","TCP는 연결형·신뢰성 보장, UDP는 비연결형","TCP가 UDP보다 빠름","UDP가 오류 제어 제공"],answer:2},
+    {id:"s_dc3",question:"192.168.1.0/24의 서브넷 마스크는?",options:["255.0.0.0","255.255.0.0","255.255.255.0","255.255.255.255"],answer:3},
+    {id:"s_dc4",question:"CSMA/CD 방식에 대한 설명으로 옳은 것은?",options:["무선 네트워크 주로 사용","충돌 감지 후 대기 후 재전송","토큰으로 접근 제어","전이중 방식으로만 동작"],answer:2},
+    {id:"s_dc5",question:"HTTP의 기본 포트 번호는?",options:["21","23","80","443"],answer:3},
+    {id:"s_dc6",question:"ARQ 방식 중 오류 발생 시 오류 난 프레임부터 모두 재전송하는 방식은?",options:["Stop-and-Wait ARQ","Go-Back-N ARQ","Selective Repeat ARQ","Sliding Window ARQ"],answer:2},
+    {id:"s_dc7",question:"공개키 암호화 방식의 특징으로 옳은 것은?",options:["암호화·복호화 같은 키 사용","키 배분이 어렵다","암호화와 복호화에 다른 키 사용","대칭키 방식이라고도 함"],answer:3},
+  ]
+};
+</script>
+<script src="questions.js" onerror="console.log('[CBT] questions.js 없음')"></script>
+
+<script>
+(function(){
+'use strict';
+
+const SUBJECTS=['데이터베이스','전자계산기구조','운영체제','소프트웨어공학','데이터통신'];
+const YEARS=[2020,2021,2022,2023,2024];
+
+/* ── Storage ── */
+const Store={
+  MK:'cbt_mastered_v2',WK:'cbt_wrong_v2',
+  get(k){try{return new Set(JSON.parse(localStorage.getItem(k)||'[]'))}catch{return new Set()}},
+  set(k,s){localStorage.setItem(k,JSON.stringify([...s]))},
+  getMastered(){return this.get(this.MK)},
+  getWrong(){return this.get(this.WK)},
+  update(correctIds,wrongIds){
+    const m=this.getMastered(),w=this.getWrong();
+    for(const id of correctIds){m.add(id);w.delete(id)}
+    for(const id of wrongIds){if(!m.has(id))w.add(id)}
+    this.set(this.MK,m);this.set(this.WK,w);
+  },
+  reset(){localStorage.removeItem(this.MK);localStorage.removeItem(this.WK)}
+};
+
+/* ── Normalize ── */
+function normalize(raw){
+  if(Array.isArray(raw))return raw;
+  const flat=[];
+  for(const subj of SUBJECTS){
+    const qs=raw[subj]||[];
+    qs.forEach((q,i)=>{
+      const yr=2020+Math.min(Math.floor(i/9),4);
+      const sess=Math.floor((i%9)/3)+1;
+      flat.push({
+        id:q.id||`${subj}_${i}`,subject:subj,year:yr,session:sess,
+        question:q.question||q.q||'',options:q.options||[],answer:q.answer||1
+      });
+    });
+  }
+  return flat;
+}
+
+function shuffle(a){
+  const b=a.slice();
+  for(let i=b.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[b[i],b[j]]=[b[j],b[i]]}
+  return b;
+}
+
+/* ── Build session ── */
+function buildSession(all,cfg){
+  const {mode,subj,years}=cfg;
+  const mastered=Store.getMastered(),wrong=Store.getWrong();
+  let pool=years.length?all.filter(q=>years.includes(q.year)):all;
+
+  if(mode==='wrong'){
+    return shuffle(pool.filter(q=>wrong.has(q.id))).slice(0,100);
+  }
+
+  pool=pool.filter(q=>!mastered.has(q.id));
+
+  if(mode==='subject'){
+    pool=pool.filter(q=>q.subject===subj);
+    const wf=shuffle(pool.filter(q=>wrong.has(q.id)));
+    const nw=shuffle(pool.filter(q=>!wrong.has(q.id)));
+    return [...wf,...nw].slice(0,100);
+  }
+
+  // all mode: 20 per subject in order
+  const result=[];
+  for(const s of SUBJECTS){
+    const sp=pool.filter(q=>q.subject===s);
+    const wf=shuffle(sp.filter(q=>wrong.has(q.id)));
+    const nw=shuffle(sp.filter(q=>!wrong.has(q.id)));
+    result.push(...[...wf,...nw].slice(0,20));
+  }
+  return result;
+}
+
+/* ── Global state ── */
+let allQ=[];
+let cfg={mode:'all',subj:'데이터베이스',years:[...YEARS]};
+const S={
+  questions:[],idx:0,sel:null,
+  phase:'selecting', // selecting | ok | bad
+  firstDone:new Set(),
+  correctIds:new Set(),
+  wrongIds:new Set(),
+  omrSt:[]
+};
+
+/* ── DOM refs ── */
+const $=id=>document.getElementById(id);
+const setupSc=$('setupScreen'),quizSc=$('quizScreen'),resultSc=$('resultScreen');
+const opts=Array.from(document.querySelectorAll('.opt'));
+const otxts=[null,...opts.map(o=>o.querySelector('.otxt'))];
+
+/* ── Screen switch ── */
+function show(name){
+  [setupSc,quizSc,resultSc].forEach(s=>s.classList.remove('active'));
+  $(`${name}Screen`).classList.add('active');
+}
+
+/* ── Stats ── */
+function refreshStats(){
+  const mastered=Store.getMastered(),wrong=Store.getWrong();
+  const pool=cfg.years.length?allQ.filter(q=>cfg.years.includes(q.year)):allQ;
+  $('stTotal').textContent=pool.length;
+  $('stMastered').textContent=[...mastered].filter(id=>pool.some(q=>q.id===id)).length;
+  $('stWrong').textContent=[...wrong].filter(id=>pool.some(q=>q.id===id)).length;
+}
+
+/* ── OMR ── */
+function buildOMR(questions){
+  const cont=$('omrContainer'),mob=$('omrMobile');
+  cont.innerHTML='';mob.innerHTML='';
+  S.omrSt=questions.map(()=>'pending');
+  let curSubj=null,curGrid=null,curMobGroup=null;
+
+  questions.forEach((q,i)=>{
+    if(q.subject!==curSubj){
+      // sidebar group
+      const g=document.createElement('div');g.className='omr-group';
+      const lbl=document.createElement('span');lbl.className='omr-subj-lbl';lbl.textContent=q.subject;
+      g.appendChild(lbl);
+      curGrid=document.createElement('div');curGrid.className='omr-grid';
+      g.appendChild(curGrid);cont.appendChild(g);
+
+      // mobile group
+      curMobGroup=document.createElement('span');curMobGroup.className='omr-mob-group';
+      const mlbl=document.createElement('span');mlbl.className='omr-mob-lbl';
+      // abbreviate subject name
+      mlbl.textContent=q.subject.replace('데이터베이스','DB').replace('전자계산기구조','전산').replace('운영체제','OS').replace('소프트웨어공학','SW').replace('데이터통신','통신');
+      curMobGroup.appendChild(mlbl);mob.appendChild(curMobGroup);
+      curSubj=q.subject;
+    }
+    // sidebar bubble
+    const b=document.createElement('div');
+    b.className='bubble';b.id=`b${i}`;b.textContent=i+1;
+    curGrid.appendChild(b);
+    // mobile bubble
+    const bm=document.createElement('span');
+    bm.className='bsm';bm.id=`bm${i}`;bm.textContent=i+1;
+    curMobGroup.appendChild(bm);
+  });
+  setOMR(0,'cur');
+}
+
+function setOMR(i,cls){
+  S.omrSt[i]=cls;
+  const sc=cls&&cls!=='pending'?' '+cls:'';
+  const b=$(`b${i}`);if(b)b.className='bubble'+sc;
+  const bm=$(`bm${i}`);if(bm)bm.className='bsm'+sc;
+}
+
+function scrollOMR(i){
+  const b=$(`b${i}`);if(b)b.scrollIntoView({block:'nearest',behavior:'smooth'});
+  const bm=$(`bm${i}`);
+  if(bm){const mob=$('omrMobile');mob.scrollLeft=bm.offsetLeft-mob.clientWidth/2;}
+}
+
+/* ── Render question ── */
+function render(){
+  const q=S.questions[S.idx],total=S.questions.length,i=S.idx;
+  $('qSubject').textContent=q.subject;
+  $('qProg').textContent=`${i+1} / ${total}`;
+  $('pbar').style.width=`${((i+1)/total)*100}%`;
+  $('qLabel').textContent=`문제 ${i+1}`;
+  $('qText').textContent=q.question;
+  for(let n=1;n<=4;n++){otxts[n].textContent=q.options[n-1]??'';opts[n-1].className='opt';}
+  $('fbOk').classList.remove('show');$('fbBad').classList.remove('show');$('fbHint').textContent='';
+  setOMR(i,'cur');scrollOMR(i);
+  $('ftStatus').textContent=`Q${i+1}/${total}`;
+  S.sel=null;S.phase='selecting';
+}
+
+/* ── Select ── */
+function sel(n){
+  if(S.phase!=='selecting')return;
+  S.sel=n;
+  for(let i=1;i<=4;i++)opts[i-1].className='opt'+(i===n?' sel':'');
+}
+
+/* ── Confirm ── */
+function checkAns(){
+  if(S.phase!=='selecting'||S.sel===null)return;
+  const q=S.questions[S.idx],ans=q.answer,i=S.idx;
+  const first=!S.firstDone.has(i);
+  opts.forEach(o=>o.classList.add('disabled'));
+
+  if(S.sel===ans){
+    opts[ans-1].classList.add('ok');
+    $('fbOk').classList.add('show');$('fbBad').classList.remove('show');
+    $('fbHint').textContent='Space → 다음 문제';
+    S.phase='ok';
+    if(first){S.firstDone.add(i);S.correctIds.add(q.id);setOMR(i,'ok');}
+    else setOMR(i,'amber');
+  }else{
+    opts[S.sel-1].classList.add('bad');opts[ans-1].classList.add('ok');
+    $('fbBad').classList.add('show');$('fbOk').classList.remove('show');
+    $('fbHint').textContent='Space → 재시도';
+    S.phase='bad';
+    if(first){S.firstDone.add(i);S.wrongIds.add(q.id);setOMR(i,'bad');}
+  }
+}
+
+/* ── Space handler ── */
+function space(){
+  if(S.phase==='selecting'){if(S.sel!==null)checkAns();}
+  else if(S.phase==='ok'){
+    S.idx++;
+    if(S.idx>=S.questions.length)showResult();
+    else render();
+  }else if(S.phase==='bad'){
+    // retry
+    S.sel=null;S.phase='selecting';
+    opts.forEach(o=>{o.className='opt';});
+    $('fbOk').classList.remove('show');$('fbBad').classList.remove('show');$('fbHint').textContent='';
+  }
+}
+
+/* ── Result ── */
+function showResult(){
+  const qs=S.questions,total=qs.length;
+  const wrongCnt=S.wrongIds.size,okCnt=total-wrongCnt;
+
+  Store.update([...S.correctIds],[...S.wrongIds]);
+
+  $('rScoreBig').textContent=okCnt;
+  $('rScoreDenom').textContent=` / ${total}`;
+  $('rOk').textContent=okCnt;$('rBad').textContent=wrongCnt;
+  $('rScoreBar').style.width='0%';
+  setTimeout(()=>$('rScoreBar').style.width=`${(okCnt/total)*100}%`,60);
+
+  // by subject
+  const subjEl=$('rBySubj');subjEl.innerHTML='';
+  for(const subj of SUBJECTS){
+    const sq=qs.filter(q=>q.subject===subj);if(!sq.length)continue;
+    const wb=sq.filter(q=>S.wrongIds.has(q.id)).length;
+    const ok=sq.length-wb;
+    const pct=Math.round((ok/sq.length)*100);
+    const row=document.createElement('div');row.className='srow';
+    row.innerHTML=`<span class="srow-name">${subj}</span>
+      <div class="srow-bar-wrap"><div class="srow-bar" style="width:0%" data-p="${pct}"></div></div>
+      <span class="srow-score" style="color:${pct>=60?'var(--green)':'var(--red)'}">${ok}/${sq.length}</span>`;
+    subjEl.appendChild(row);
+  }
+  setTimeout(()=>{
+    document.querySelectorAll('.srow-bar').forEach(b=>b.style.width=b.dataset.p+'%');
+  },100);
+
+  // wrong list
+  const wc=$('wrongCard');
+  if(S.wrongIds.size){
+    wc.style.display='block';
+    $('wrongBadge').textContent=S.wrongIds.size+'개';
+    const wl=$('wrongList');wl.innerHTML='';
+    qs.forEach((q,i)=>{
+      if(!S.wrongIds.has(q.id))return;
+      const d=document.createElement('div');d.className='wi';
+      d.innerHTML=`<div class="wi-meta">${q.subject} · ${q.year}년 ${q.session}회</div>
+        <div class="wi-q">Q${i+1}. ${q.question}</div>
+        <div class="wi-a">정답: ${q.options[q.answer-1]}</div>`;
+      wl.appendChild(d);
+    });
+  }else wc.style.display='none';
+
+  refreshStats();
+  show('result');
+}
+
+/* ── Start session ── */
+function startSession(){
+  const qs=buildSession(allQ,cfg);
+  if(!qs.length){alert('선택 조건에 맞는 문제가 없습니다.\n연도나 모드를 변경해 보세요.');return;}
+  Object.assign(S,{questions:qs,idx:0,sel:null,phase:'selecting',
+    firstDone:new Set(),correctIds:new Set(),wrongIds:new Set(),omrSt:[]});
+  buildOMR(qs);render();show('quiz');
+}
+
+/* ── Init ── */
+function init(){
+  const raw=(typeof QUESTIONS!=='undefined')?QUESTIONS:SAMPLE_DATA;
+  allQ=normalize(raw);
+  refreshStats();
+}
+
+/* ── Setup UI events ── */
+// Mode tabs
+document.querySelectorAll('[data-mode]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-mode]').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');cfg.mode=btn.dataset.mode;
+    $('subjectRow').classList.toggle('show',cfg.mode==='subject');
+    $('yearCard').style.display=cfg.mode==='wrong'?'none':'block';
+    refreshStats();
+  });
+});
+
+// Subject chips
+document.querySelectorAll('[data-subj]').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('[data-subj]').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');cfg.subj=c.dataset.subj;
+  });
+});
+
+// Year buttons
+document.querySelectorAll('[data-year]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const yr=btn.dataset.year;
+    if(yr==='all'){
+      const allOn=YEARS.every(y=>cfg.years.includes(y));
+      cfg.years=allOn?[]:[...YEARS];
+      document.querySelectorAll('[data-year]').forEach(b=>b.classList.toggle('on',!allOn));
+    }else{
+      const y=parseInt(yr);
+      if(cfg.years.includes(y))cfg.years=cfg.years.filter(x=>x!==y);
+      else cfg.years.push(y);
+      btn.classList.toggle('on',cfg.years.includes(y));
+      const allBtn=document.querySelector('[data-year="all"]');
+      allBtn.classList.toggle('on',YEARS.every(y=>cfg.years.includes(y)));
+    }
+    refreshStats();
+  });
+});
+
+$('btnReset').addEventListener('click',()=>{
+  if(confirm('모든 학습 진행을 초기화하시겠습니까?')){Store.reset();refreshStats();}
+});
+$('btnStart').addEventListener('click',startSession);
+$('btnRestart').addEventListener('click',startSession);
+$('btnHome').addEventListener('click',()=>{refreshStats();show('setup');});
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(!quizSc.classList.contains('active'))return;
+  if(e.code==='Space'){e.preventDefault();space();}
+  else if(/^(Digit|Numpad)[1-4]$/.test(e.code)){
+    sel(parseInt(e.code.replace(/\D/g,'')));
+  }
+});
+
+// Click options
+opts.forEach((o,i)=>o.addEventListener('click',()=>{if(S.phase==='selecting')sel(i+1);}));
+
+init();
+})();
+</script>
+</body>
+</html>
