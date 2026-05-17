@@ -137,6 +137,20 @@ kbd{display:inline-block;background:var(--surface2);border:1px solid var(--borde
 .result-btns{display:flex;gap:10px;width:100%;max-width:680px}
 .result-btns .btn-primary{flex:1;border-radius:var(--r)!important}
 
+/* ── mobile action buttons ── */
+.mob-action{
+  display:none;width:100%;padding:15px;margin-top:14px;
+  border:none;border-radius:var(--r);font-family:inherit;font-size:16px;font-weight:700;
+  cursor:pointer;animation:pop .2s cubic-bezier(.34,1.56,.64,1);
+}
+.mob-action.next-act{background:var(--green);color:#fff}
+.mob-action.retry-act{background:var(--red-lt);color:var(--red);border:2px solid var(--red)}
+@media(max-width:768px){
+  .mob-action{display:block}
+  /* hide keyboard hint on mobile */
+  .quiz-footer .ft-hints{display:none}
+}
+
 /* ── mobile OMR strip ── */
 .omr-mobile{
   display:none;background:var(--surface);border-top:1px solid var(--border);
@@ -261,9 +275,11 @@ kbd{display:inline-block;background:var(--surface2);border:1px solid var(--borde
       </ul>
       <div class="fb-area">
         <div class="fb ok-fb" id="fbOk">✓ 정답!</div>
-        <div class="fb bad-fb" id="fbBad">✗ 오답! 정답을 확인하고 재시도</div>
+        <div class="fb bad-fb" id="fbBad">✗ 오답!</div>
         <span class="fb-hint" id="fbHint"></span>
       </div>
+      <button class="mob-action next-act" id="mobNext" style="display:none">다음 문제 →</button>
+      <button class="mob-action retry-act" id="mobRetry" style="display:none">정답 확인 후 재시도 →</button>
     </div>
 
     <div class="quiz-footer">
@@ -545,6 +561,7 @@ function render(){
   $('qText').textContent=q.question;
   for(let n=1;n<=4;n++){otxts[n].textContent=q.options[n-1]??'';opts[n-1].className='opt';}
   $('fbOk').classList.remove('show');$('fbBad').classList.remove('show');$('fbHint').textContent='';
+  $('mobNext').style.display='none';$('mobRetry').style.display='none';
   setOMR(i,'cur');scrollOMR(i);
   $('ftStatus').textContent=`Q${i+1}/${total}`;
   S.sel=null;S.phase='selecting';
@@ -568,6 +585,7 @@ function checkAns(){
     opts[ans-1].classList.add('ok');
     $('fbOk').classList.add('show');$('fbBad').classList.remove('show');
     $('fbHint').textContent='Space → 다음 문제';
+    $('mobNext').style.display='';$('mobRetry').style.display='none';
     S.phase='ok';
     if(first){S.firstDone.add(i);S.correctIds.add(q.id);setOMR(i,'ok');}
     else setOMR(i,'amber');
@@ -575,6 +593,7 @@ function checkAns(){
     opts[S.sel-1].classList.add('bad');opts[ans-1].classList.add('ok');
     $('fbBad').classList.add('show');$('fbOk').classList.remove('show');
     $('fbHint').textContent='Space → 재시도';
+    $('mobRetry').style.display='';$('mobNext').style.display='none';
     S.phase='bad';
     if(first){S.firstDone.add(i);S.wrongIds.add(q.id);setOMR(i,'bad');}
   }
@@ -588,10 +607,10 @@ function space(){
     if(S.idx>=S.questions.length)showResult();
     else render();
   }else if(S.phase==='bad'){
-    // retry
     S.sel=null;S.phase='selecting';
     opts.forEach(o=>{o.className='opt';});
     $('fbOk').classList.remove('show');$('fbBad').classList.remove('show');$('fbHint').textContent='';
+    $('mobNext').style.display='none';$('mobRetry').style.display='none';
   }
 }
 
@@ -708,7 +727,11 @@ $('btnStart').addEventListener('click',startSession);
 $('btnRestart').addEventListener('click',startSession);
 $('btnHome').addEventListener('click',()=>{refreshStats();show('setup');});
 
-// Keyboard
+// Mobile action buttons
+$('mobNext').addEventListener('click',()=>space());
+$('mobRetry').addEventListener('click',()=>space());
+
+// Keyboard (desktop)
 document.addEventListener('keydown',e=>{
   if(!quizSc.classList.contains('active'))return;
   if(e.code==='Space'){e.preventDefault();space();}
@@ -717,8 +740,16 @@ document.addEventListener('keydown',e=>{
   }
 });
 
-// Click options
-opts.forEach((o,i)=>o.addEventListener('click',()=>{if(S.phase==='selecting')sel(i+1);}));
+// Touch: tap = select + immediate submit
+opts.forEach((o,i)=>{
+  o.addEventListener('touchend',e=>{
+    e.preventDefault(); // block subsequent click
+    if(S.phase==='selecting'){sel(i+1);setTimeout(checkAns,80);}
+    else if(S.phase==='ok'||S.phase==='bad'){setTimeout(space,80);}
+  },{passive:false});
+  // Desktop click: select only
+  o.addEventListener('click',()=>{if(S.phase==='selecting')sel(i+1);});
+});
 
 init();
 })();
